@@ -1,6 +1,8 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import * as Tone from 'tone';
+  // MidiWriter를 UMD 방식으로 가져오기
+  import MidiWriter from 'midi-writer-js';
   
   // 비트 그리드 설정
   let rows = 4; // 드럼 종류
@@ -118,6 +120,84 @@
     );
   }
   
+  // MIDI 파일 생성 및 다운로드 함수
+  function exportToMidi() {
+    // MIDI 트랙 생성
+    const tracks = [];
+    
+    // GM 드럼 매핑 (일반 MIDI 표준)
+    const drumMapping = [
+      36, // Kick (Bass Drum 1)
+      38, // Snare
+      42, // Closed Hi-hat
+      45  // Tom 1
+    ];
+    
+    // 각 드럼 종류마다 별도의 트랙 생성
+    for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+      // 현재 행에 활성화된 셀이 있는지 확인
+      if (grid[rowIndex].some(cell => cell)) {
+        const track = new MidiWriter.Track();
+        
+        // 트랙 이름 설정
+        track.addEvent(new MidiWriter.ProgramChangeEvent({instrument: 0})); // GM drum kit
+        
+        // 노트 이벤트 추가 (16분음표 기준)
+        const notes = [];
+        
+        for (let colIndex = 0; colIndex < cols; colIndex++) {
+          if (grid[rowIndex][colIndex]) {
+            notes.push({
+              pitch: drumMapping[rowIndex],
+              duration: '16',
+              startTick: colIndex * 16, // 16틱을 16분음표로 간주
+              velocity: velocityRandomization && (rowIndex === 2 || rowIndex === 3) ? 
+                Math.floor(baseVelocity * 127) : 100
+            });
+          }
+        }
+        
+        // 드럼 노트 이벤트 추가 (채널 10은 GM 드럼 채널)
+        if (notes.length > 0) {
+          notes.forEach(note => {
+            track.addEvent(new MidiWriter.NoteEvent({
+              pitch: note.pitch,
+              duration: note.duration,
+              startTick: note.startTick,
+              velocity: note.velocity,
+              channel: 10
+            }));
+          });
+          
+          tracks.push(track);
+        }
+      }
+    }
+    
+    // 모든 트랙이 비어있는지 확인
+    if (tracks.length === 0) {
+      alert('내보낼 비트 패턴이 없습니다. 먼저 비트를 만들어주세요.');
+      return;
+    }
+    
+    // 템포 설정을 위한 트랙 추가
+    const tempoTrack = new MidiWriter.Track();
+    tempoTrack.addEvent(new MidiWriter.TempoEvent({ bpm: tempo }));
+    tracks.unshift(tempoTrack);
+    
+    // MIDI 파일 생성
+    const write = new MidiWriter.Writer(tracks);
+    
+    // MIDI 파일 다운로드
+    const midiBlob = new Blob([write.buildFile()], { type: 'audio/midi' });
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(midiBlob);
+    downloadLink.download = `drum-pattern-${tempo}bpm.mid`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+  
   // 컴포넌트가 제거될 때 정리
   onDestroy(() => {
     if (isPlaying) {
@@ -160,6 +240,7 @@
     <div class="pattern-controls">
       <button on:click={clearPattern} class="clear-btn">패턴 지우기</button>
       <button on:click={randomPattern} class="random-btn">랜덤 패턴</button>
+      <button on:click={exportToMidi} class="export-btn">MIDI 내보내기</button>
     </div>
   </div>
   
@@ -246,6 +327,7 @@
     <p>3. BPM 슬라이더로 템포를 조절할 수 있습니다.</p>
     <p>4. '패턴 지우기'로 초기화하거나 '랜덤 패턴'으로 새로운 패턴을 시도해보세요.</p>
     <p>5. '하이햇 & 탐 다이나믹스 설정'에서 하이햇과 탐의 벨로시티 랜덤화를 조절할 수 있습니다.</p>
+    <p>6. 'MIDI 내보내기' 버튼을 클릭하여 만든 비트 패턴을 MIDI 파일로 저장할 수 있습니다.</p>
   </div>
 </section>
 
@@ -329,6 +411,15 @@
   
   .random-btn:hover {
     background-color: #7e57c2;
+  }
+  
+  .export-btn {
+    background-color: #2196f3;
+    color: white;
+  }
+  
+  .export-btn:hover {
+    background-color: #1976d2;
   }
   
   /* 벨로시티 컨트롤 스타일 */
