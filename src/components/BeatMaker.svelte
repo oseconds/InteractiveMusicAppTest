@@ -8,7 +8,7 @@
   let grid = createEmptyGrid(rows, cols);
   let currentStep = 0;
   let isPlaying = false;
-  let tempo = 120; // BPM
+  let tempo = 128; // BPM
   let drumSequencer;
   
   // 드럼 소리 설정
@@ -132,7 +132,7 @@
         type="range" 
         id="tempo" 
         min="60" 
-        max="180" 
+        max="200" 
         step="1" 
         bind:value={tempo} 
         on:input={updateTempo}
