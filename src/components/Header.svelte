@@ -7,7 +7,7 @@
   <nav class="main-nav">
     <ul>
       <li><a href="#about">소개</a></li>
-      <li><a href="https://github.com/yourusername/2025blog" target="_blank">GitHub</a></li>
+      <li><a href="https://github.com/oseconds/InteractiveMusicAppTest" target="_blank">GitHub</a></li>
     </ul>
   </nav>
 </header>
