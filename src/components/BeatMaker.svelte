@@ -70,10 +70,13 @@
         if (row[step]) {
           const note = ['C2', 'D2', 'E2', 'F2'][rowIndex];
           let velocity = baseVelocity;
-          if (velocityRandomization) {
+          
+          // 하이햇(2번 행)과 탐(3번 행)에만 벨로시티 랜덤화 적용
+          if (velocityRandomization && (rowIndex === 2 || rowIndex === 3)) {
             velocity += Math.random() * velocityRange - velocityRange / 2;
             velocity = Math.max(0, Math.min(1, velocity)); // Clamp between 0 and 1
           }
+          
           drumSampler.triggerAttackRelease(note, '16n', time, velocity);
         }
       });
@@ -160,48 +163,6 @@
     </div>
   </div>
   
-  <div class="velocity-controls">
-    <div class="velocity-toggle">
-      <label class="switch">
-        <input type="checkbox" bind:checked={velocityRandomization}>
-        <span class="slider"></span>
-      </label>
-      <span>벨로시티 랜덤화 {velocityRandomization ? '켜짐' : '꺼짐'}</span>
-    </div>
-    
-    <div class="velocity-settings" class:disabled={!velocityRandomization}>
-      <div class="velocity-control">
-        <label for="baseVelocity">
-          기본 세기: {(baseVelocity * 100).toFixed(0)}%
-        </label>
-        <input 
-          type="range" 
-          id="baseVelocity" 
-          min="0.1" 
-          max="1" 
-          step="0.05" 
-          bind:value={baseVelocity} 
-          disabled={!velocityRandomization}
-        />
-      </div>
-      
-      <div class="velocity-control">
-        <label for="velocityRange">
-          변동 폭: {(velocityRange * 100).toFixed(0)}%
-        </label>
-        <input 
-          type="range" 
-          id="velocityRange" 
-          min="0" 
-          max="0.9" 
-          step="0.05" 
-          bind:value={velocityRange}
-          disabled={!velocityRandomization} 
-        />
-      </div>
-    </div>
-  </div>
-  
   <div class="grid-container">
     <div class="labels">
       {#each drumSounds as sound, i}
@@ -231,12 +192,60 @@
     </div>
   </div>
   
+  <div class="compact-velocity-controls">
+    <details>
+      <summary>하이햇 & 탐 다이나믹스 설정</summary>
+      <div class="velocity-inner">
+        <div class="velocity-toggle">
+          <label class="switch">
+            <input type="checkbox" bind:checked={velocityRandomization}>
+            <span class="slider"></span>
+          </label>
+          <span>벨로시티 랜덤화 {velocityRandomization ? '켜짐' : '꺼짐'}</span>
+        </div>
+        
+        <div class="velocity-settings" class:disabled={!velocityRandomization}>
+          <div class="velocity-control">
+            <label for="baseVelocity">
+              기본 세기: {(baseVelocity * 100).toFixed(0)}%
+            </label>
+            <input 
+              type="range" 
+              id="baseVelocity" 
+              min="0.1" 
+              max="1" 
+              step="0.05" 
+              bind:value={baseVelocity} 
+              disabled={!velocityRandomization}
+            />
+          </div>
+          
+          <div class="velocity-control">
+            <label for="velocityRange">
+              변동 폭: {(velocityRange * 100).toFixed(0)}%
+            </label>
+            <input 
+              type="range" 
+              id="velocityRange" 
+              min="0" 
+              max="0.9" 
+              step="0.05" 
+              bind:value={velocityRange}
+              disabled={!velocityRandomization} 
+            />
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  
   <div class="instructions">
     <h3>사용 방법</h3>
     <p>1. 그리드의 셀을 클릭하여 비트 패턴을 만듭니다.</p>
     <p>2. '재생' 버튼을 클릭하여 만든 비트를 들어보세요.</p>
     <p>3. BPM 슬라이더로 템포를 조절할 수 있습니다.</p>
     <p>4. '패턴 지우기'로 초기화하거나 '랜덤 패턴'으로 새로운 패턴을 시도해보세요.</p>
+    <p>5. '하이햇 & 탐 다이나믹스 설정'에서 하이햇과 탐의 벨로시티 랜덤화를 조절할 수 있습니다.</p>
   </div>
 </section>
 
@@ -323,11 +332,29 @@
   }
   
   /* 벨로시티 컨트롤 스타일 */
-  .velocity-controls {
+  .compact-velocity-controls {
     background-color: #2a2a2a;
     border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .compact-velocity-controls summary {
+    cursor: pointer;
+    padding: 0.5rem;
+    font-weight: bold;
+    color: #ff6b6b;
+  }
+  
+  .compact-velocity-controls details[open] summary {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #444;
+    padding-bottom: 0.5rem;
+  }
+  
+  .velocity-inner {
+    padding: 0.5rem;
   }
   
   .velocity-toggle {
