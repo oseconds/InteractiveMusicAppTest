@@ -6,11 +6,17 @@
   let rows = 4; // 드럼 종류
   let cols = 16; // 비트 수
   let grid = createEmptyGrid(rows, cols);
+  let velocityGrid = createEmptyVelocityGrid(rows, cols);
   let currentStep = 0;
   let isPlaying = false;
   let tempo = 128; // BPM
   let drumSequencer;
   
+  // 벨로시티 설정
+  let velocityRandomization = true; // 벨로시티 랜덤화 활성화 상태
+  let velocityRange = 0.3; // 벨로시티 변동 범위 (0-1)
+  let baseVelocity = 0.7; // 기본 벨로시티 값
+
   // 드럼 소리 설정
   const drumSounds = [
     { name: '킥', sample: 'https://tonejs.github.io/audio/drum-samples/CR78/kick.mp3' },
@@ -36,6 +42,10 @@
   function createEmptyGrid(rows, cols) {
     return Array(rows).fill().map(() => Array(cols).fill(false));
   }
+
+  function createEmptyVelocityGrid(rows, cols) {
+    return Array(rows).fill().map(() => Array(cols).fill(1));
+  }
   
   // 셀 토글 함수
   function toggleCell(row, col) {
@@ -59,7 +69,12 @@
       grid.forEach((row, rowIndex) => {
         if (row[step]) {
           const note = ['C2', 'D2', 'E2', 'F2'][rowIndex];
-          drumSampler.triggerAttackRelease(note, '16n', time);
+          let velocity = baseVelocity;
+          if (velocityRandomization) {
+            velocity += Math.random() * velocityRange - velocityRange / 2;
+            velocity = Math.max(0, Math.min(1, velocity)); // Clamp between 0 and 1
+          }
+          drumSampler.triggerAttackRelease(note, '16n', time, velocity);
         }
       });
       
@@ -142,6 +157,48 @@
     <div class="pattern-controls">
       <button on:click={clearPattern} class="clear-btn">패턴 지우기</button>
       <button on:click={randomPattern} class="random-btn">랜덤 패턴</button>
+    </div>
+  </div>
+  
+  <div class="velocity-controls">
+    <div class="velocity-toggle">
+      <label class="switch">
+        <input type="checkbox" bind:checked={velocityRandomization}>
+        <span class="slider"></span>
+      </label>
+      <span>벨로시티 랜덤화 {velocityRandomization ? '켜짐' : '꺼짐'}</span>
+    </div>
+    
+    <div class="velocity-settings" class:disabled={!velocityRandomization}>
+      <div class="velocity-control">
+        <label for="baseVelocity">
+          기본 세기: {(baseVelocity * 100).toFixed(0)}%
+        </label>
+        <input 
+          type="range" 
+          id="baseVelocity" 
+          min="0.1" 
+          max="1" 
+          step="0.05" 
+          bind:value={baseVelocity} 
+          disabled={!velocityRandomization}
+        />
+      </div>
+      
+      <div class="velocity-control">
+        <label for="velocityRange">
+          변동 폭: {(velocityRange * 100).toFixed(0)}%
+        </label>
+        <input 
+          type="range" 
+          id="velocityRange" 
+          min="0" 
+          max="0.9" 
+          step="0.05" 
+          bind:value={velocityRange}
+          disabled={!velocityRandomization} 
+        />
+      </div>
     </div>
   </div>
   
@@ -263,6 +320,86 @@
   
   .random-btn:hover {
     background-color: #7e57c2;
+  }
+  
+  /* 벨로시티 컨트롤 스타일 */
+  .velocity-controls {
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .velocity-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+  }
+  
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: 0.4s;
+    border-radius: 24px;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .slider {
+    background-color: #ff6b6b;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(26px);
+  }
+  
+  .velocity-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .velocity-settings.disabled {
+    opacity: 0.5;
+  }
+  
+  .velocity-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .velocity-control input[type="range"] {
+    width: 100%;
   }
   
   .grid-container {
