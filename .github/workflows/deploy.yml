@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+  # main 브랜치에 push할 때마다 실행
+  push:
+    branches: [main]
+  # 수동 실행 옵션 추가
+  workflow_dispatch:
+
+# GitHub Pages에 배포하기 위해 GITHUB_TOKEN 권한 설정
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 한 번에 하나의 배포만 허용
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 코드
+        uses: actions/checkout@v3
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: 종속성 설치
+        run: npm ci
+
+      - name: 빌드
+        run: npm run build
+
+      - name: 빌드 결과물 업로드
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: GitHub Pages에 배포
+        id: deployment
+        uses: actions/deploy-pages@v2
